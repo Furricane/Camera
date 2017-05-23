@@ -4,7 +4,7 @@ import os, sys
 from subprocess import Popen, PIPE
 import time
 import threading
-sys.path.append('/home/pi/Camera/Utilities')
+sys.path.append('/home/pi/PythonUtilities')
 sys.path.append('/home/pi/Camera/Logfiles')
 import logger
 from logger import logging
@@ -13,8 +13,8 @@ from datetime import datetime
 from datetime import timedelta
 import gmail
 import schedule
-import watchdoghost
-import watchdogclient
+import watchdog
+
 
 DebugMode = False
 SchedulerPresent = False
@@ -27,13 +27,16 @@ globals.VerboseLogging = True
 globals.VerboseModuleLogging = False
 
 
+#Start Log
+logger.CreateLog('Camera1', logpath='./Logfiles')
+
 # Spawn a watchdog process to notify if the main process fails
 if WatchDogRemote:
-    watchdoghost.CreateHost('192.168.1.92',54321)
-    globals.RunThreaded(watchdoghost.AcceptConnections)
-    globals.RunThreaded(watchdoghost.SendWatchdogHeartbeat)
+    watchdog.CreateHost('192.168.1.92',54321, 'Camera1')
+    globals.RunThreaded(watchdog.AcceptConnections)
+    globals.RunThreaded(watchdog.SendWatchdogHeartbeat)
     if MutualWatchDog:
-        globals.RunThreaded(watchdogclient.WatchDog, ('192.168.1.91', 12345))
+        globals.RunThreaded(watchdog.WatchDog, ('192.168.1.91', 12345, 'HomeControl'))
 
 
 def ScheduleEvents():
