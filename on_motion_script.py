@@ -36,4 +36,3 @@ for capturefile in dirlist:
 
 
 
-
