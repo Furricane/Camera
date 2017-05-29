@@ -31,18 +31,9 @@ gmail.SendMail("Camera Motion Detected","Camera Motion Detected")
 folder = GoogleDrive.CreateFolder('CameraTest')
 filelist, ids = GoogleDrive.GetFileList('CameraTest')
 
-filelistnopaths=[]
-for f in filelist:
-    #print ("file ",f)
-    path, filename = os.path.split(f)
-    #print("path= ",path,"filename=",filename)
-    filelistnopaths.append(filename)
-    print("filename=",filename)
-
 for capturefile in dirlist:
-    print(capturefile.decode())
-    if capturefile.decode() in filelistnopaths:
-         print("Duplicate file, not uploading")
+    if capturefile.decode() in filelist:
+         print("Duplicate file, not uploading: ", capturefile.decode())
     else:
         GoogleDrive.UploadFile('/home/pi/Camera/Capture/',capturefile.decode(), folder)
 
