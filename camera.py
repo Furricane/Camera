@@ -1,34 +1,43 @@
 #!/usr/bin/python
 #!/usr/bin/env python
 import os, sys
+os.chdir('/home/pi/Camera/') # Change working directory
 from subprocess import Popen, PIPE
 import time
 import threading
 sys.path.append('/home/pi/PythonUtilities')
 sys.path.append('/home/pi/Camera/Logfiles')
-import logger
-from logger import logging
+import LogHelper
+from LogHelper import logging
 import globals
 from datetime import datetime
 from datetime import timedelta
 import gmail
 import schedule
 import watchdog
+import GoogleDrive
+import socketcomm
 
 
 DebugMode = False
 SchedulerPresent = False
 WatchDogLocal = False
-WatchDogRemote = True
-MutualWatchDog = True
+WatchDogRemote = False
+MutualWatchDog = False
+MotionHost = True
+
 
 globals.VerboseTexting = False
 globals.VerboseLogging = True
 globals.VerboseModuleLogging = False
 
-
+MotionPort = 44444 
+MotionHostCreated = False
+MotionHostConnectedStatus = False
 #Start Log
-logger.CreateLog('Camera1', logpath='./Logfiles')
+LogHelper.Init('Camera1', logfilepath='./Logfiles')
+
+
 
 # Spawn a watchdog process to notify if the main process fails
 if WatchDogRemote:
@@ -37,6 +46,55 @@ if WatchDogRemote:
     globals.RunThreaded(watchdog.SendWatchdogHeartbeat)
     if MutualWatchDog:
         globals.RunThreaded(watchdog.WatchDog, ('192.168.1.91', 12345, 'HomeControl'))
+
+def CreateMotionHost(HostAddress, HostPort):
+    global MotionHost
+    global MotionHostConnectedStatus
+    MotionHost, connectedstatus = socketcomm.CreateHost(HostAddress, HostPort)
+    print("creating motion host with port",HostPort)
+    while True:
+        try:
+            MotionHost.AcceptConnection()
+            print("Motion Connection accepted!")
+            MotionHostConnectedStatus = True
+            break
+        except BlockingIOError:
+            pass
+
+def HostListen():
+    global MotionHost
+    data = MotionHost.read()
+    #print(str(data))
+    if data != b"":
+        message = data.decode()
+        message = message.strip()
+        #print("Message Received:", message)
+        return message
+    else:
+        return ''
+
+def listdir_shell(path, *lsargs):
+    p = Popen(('ls', path) + lsargs, shell=False, stdout=PIPE, close_fds=True)
+    #for path in p.stdout.readlines():
+    #    print(path.strip())
+    #return [path.rstrip('\n') for path in p.stdout.readlines()]
+    return [path.strip() for path in p.stdout.readlines()]
+
+def OnMotionDetectedEvent():
+    print("executing on motion events")
+    dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
+
+    print("Starting notify loop")
+    gmail.SendMail("Camera Motion Detected","Camera Motion Detected")
+
+    folder = GoogleDrive.CreateFolder('CameraTest')
+    filelist, ids = GoogleDrive.GetFileList('CameraTest')
+
+    for capturefile in dirlist:
+        if capturefile.decode() in filelist:
+            print("Duplicate file, not uploading: ", capturefile.decode())
+        else:
+            GoogleDrive.UploadFile('/home/pi/Camera/Capture/',capturefile.decode(), folder)
 
 
 def ScheduleEvents():
@@ -68,6 +126,27 @@ if SchedulerPresent:
 TestRunOnce = True
 print("Starting main loop")
 while True:
+    
+    if not MotionHostCreated:
+        MotionHostCreated = True
+        print("creating new motion host")
+        globals.RunThreaded(CreateMotionHost,['192.168.1.92', MotionPort])
+
+    message = ''
+
+    if MotionHostConnectedStatus:
+        message = HostListen()
+
+        if message != '':
+            print("Message Recieved = ",message)
+
+            if message == 'MotionDetected':
+                print("Mitondet")
+                MotionHostCreated = False
+                MotionHostConnectedStatus = False
+                MotionHost.close_socket()
+                OnMotionDetectedEvent()
+
     if globals.VerboseLogging:
         now = datetime.now()
 
