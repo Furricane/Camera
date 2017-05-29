@@ -1,6 +1,7 @@
 #!/usr/bin/python
 #!/usr/bin/env python
 import os, sys
+os.chdir('/home/pi/Camera/') # Change working directory
 from subprocess import Popen, PIPE
 import time
 import threading
@@ -11,6 +12,8 @@ from datetime import datetime
 from datetime import timedelta
 import gmail
 import GoogleDrive
+
+#print(os.getcwd())
 
 
 def listdir_shell(path, *lsargs):
