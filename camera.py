@@ -80,12 +80,18 @@ def listdir_shell(path, *lsargs):
     #return [path.rstrip('\n') for path in p.stdout.readlines()]
     return [path.strip() for path in p.stdout.readlines()]
 
-def OnMotionDetectedEvent():
-    print("executing on motion events")
+def OnMotionDetectedEvent(zone=None):
+    if zone == None:
+        zonemsg = 'All'
+    else:
+         zonemsg = str(zone)
+         gmail.SendText("Motion Detected Zone "+zonemsg)
+
+    print("executing on motion events - " + zonemsg)
     dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
 
     print("Starting notify loop")
-    gmail.SendMail("Camera Motion Detected","Camera Motion Detected")
+    gmail.SendMail("Camera Motion Detected","Camera Motion Detected "+zonemsg)
 
     folder = GoogleDrive.CreateFolder('CameraTest')
     filelist, ids = GoogleDrive.GetFileList('CameraTest')
@@ -140,13 +146,17 @@ while True:
         if message != '':
             print("Message Recieved = ",message)
 
-            if message == 'MotionDetected':
+            if 'MotionDetected' in message:
                 print("Mitondet")
                 MotionHostCreated = False
                 MotionHostConnectedStatus = False
                 MotionHost.close_socket()
-                OnMotionDetectedEvent()
-
+                if message == 'MotionDetected':
+                    OnMotionDetectedEvent()
+                else:
+                    zone = message[-1]
+                    print("zone=", zone)
+                    OnMotionDetectedEvent(zone)
     if globals.VerboseLogging:
         now = datetime.now()
 
