@@ -91,8 +91,8 @@ def OnMotionDetectedEvent(zone=None):
     dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
 
     print("Starting notify loop")
-    gmail.SendMail("Camera Motion Detected","Camera Motion Detected "+zonemsg)
-
+    #gmail.SendMail("Camera Motion Detected","Camera Motion Detected "+zonemsg)
+    gmail.SendMail2("Camera Motion Detected Upload","Camera Motion Detected Upload"+zonemsg,[dirlist[0].decode()], path='/home/pi/Camera/Capture/')
     folder = GoogleDrive.CreateFolder('CameraTest')
     filelist, ids = GoogleDrive.GetFileList('CameraTest')
 
