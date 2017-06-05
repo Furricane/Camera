@@ -73,6 +73,9 @@ def HostListen():
     else:
         return ''
 
+def listFiles(path, extension):
+    return [f for f in os.listdir(path) if f.endswith(extension)]
+    
 def listdir_shell(path, *lsargs):
     p = Popen(('ls', path) + lsargs, shell=False, stdout=PIPE, close_fds=True)
     #for path in p.stdout.readlines():
@@ -89,10 +92,12 @@ def OnMotionDetectedEvent(zone=None):
 
     print("executing on motion events - " + zonemsg)
     dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
+    
+    jpgdirlist = listdir_shell('/home/pi/Camera/Capture/', '*.jpg -t')[:1]
 
     print("Starting notify loop")
     #gmail.SendMail("Camera Motion Detected","Camera Motion Detected "+zonemsg)
-    gmail.SendMail2("Camera Motion Detected Upload","Camera Motion Detected Upload"+zonemsg,[dirlist[0].decode()], path='/home/pi/Camera/Capture/')
+    gmail.SendMail2("Camera Motion Detected Upload","Camera Motion Detected Upload"+zonemsg,[jpgdirlist[0].decode()], path='/home/pi/Camera/Capture/')
     folder = GoogleDrive.CreateFolder('CameraTest')
     filelist, ids = GoogleDrive.GetFileList('CameraTest')
 
