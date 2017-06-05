@@ -21,11 +21,9 @@ import socketcomm
 
 DebugMode = False
 SchedulerPresent = False
-WatchDogLocal = False
-WatchDogRemote = False
-MutualWatchDog = False
+WatchDogRemote = True
+MutualWatchDog = True
 MotionHost = True
-
 
 globals.VerboseTexting = False
 globals.VerboseLogging = True
@@ -36,8 +34,6 @@ MotionHostCreated = False
 MotionHostConnectedStatus = False
 #Start Log
 LogHelper.Init('Camera1', logfilepath='./Logfiles')
-
-
 
 # Spawn a watchdog process to notify if the main process fails
 if WatchDogRemote:
@@ -83,6 +79,32 @@ def listdir_shell(path, *lsargs):
     #return [path.rstrip('\n') for path in p.stdout.readlines()]
     return [path.strip() for path in p.stdout.readlines()]
 
+def GetDirectoryFileList(path='.', extfilter=None, numitems = None, mostrecent=True):
+    command ='ls '+path
+    if extfilter == None:
+        command += '*.*'
+    else:
+        command += extfilter
+    if mostrecent:
+        command += ' -t'
+    p = Popen(command, shell=True, stdout=PIPE, close_fds=True)
+    dirlist = []
+    for path in p.stdout.readlines():
+        print(path)
+        path = path.decode()
+        path = os.path.basename(path)
+        x = path.strip()
+        print(x)
+        #x = x.decode()
+        dirlist.append(x)
+    #dirlist = [path.strip() for path in p.stdout.readlines()]
+    #dirlist = [item.decode() for item in dirlist]
+    if numitems != None:
+        dirlist = dirlist[:numitems]       
+    #print(dirlist)
+    return dirlist
+
+
 def OnMotionDetectedEvent(zone=None):
     if zone == None:
         zonemsg = 'All'
@@ -91,21 +113,22 @@ def OnMotionDetectedEvent(zone=None):
          gmail.SendText("Motion Detected Zone "+zonemsg)
 
     print("executing on motion events - " + zonemsg)
-    dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
-    
-    jpgdirlist = listdir_shell('/home/pi/Camera/Capture/', '*.jpg -t')[:1]
-
+    #dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
+    dirlist = GetDirectoryFileList('/home/pi/Camera/Capture/',numitems=10)
+    #jpgdirlist = listdir_shell('/home/pi/Camera/Capture/', '*.jpg -t')[:1]
+    jpgdirlist= GetDirectoryFileList('/home/pi/Camera/Capture/',extfilter='*.jpg',numitems=1)
     print("Starting notify loop")
     #gmail.SendMail("Camera Motion Detected","Camera Motion Detected "+zonemsg)
-    gmail.SendMail2("Camera Motion Detected Upload","Camera Motion Detected Upload"+zonemsg,[jpgdirlist[0].decode()], path='/home/pi/Camera/Capture/')
+    print(jpgdirlist)
+    gmail.SendMail2("Camera Motion Detected Upload","Camera Motion Detected Upload"+zonemsg,jpgdirlist, path='/home/pi/Camera/Capture/')
     folder = GoogleDrive.CreateFolder('CameraTest')
     filelist, ids = GoogleDrive.GetFileList('CameraTest')
 
     for capturefile in dirlist:
-        if capturefile.decode() in filelist:
-            print("Duplicate file, not uploading: ", capturefile.decode())
+        if capturefile in filelist:
+            print("Duplicate file, not uploading: ", capturefile)
         else:
-            GoogleDrive.UploadFile('/home/pi/Camera/Capture/',capturefile.decode(), folder)
+            GoogleDrive.UploadFile('/home/pi/Camera/Capture/',capturefile, folder)
 
 
 def ScheduleEvents():
@@ -147,12 +170,9 @@ while True:
 
     if MotionHostConnectedStatus:
         message = HostListen()
-
         if message != '':
             print("Message Recieved = ",message)
-
             if 'MotionDetected' in message:
-                print("Mitondet")
                 MotionHostCreated = False
                 MotionHostConnectedStatus = False
                 MotionHost.close_socket()
