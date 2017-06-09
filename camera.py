@@ -90,11 +90,11 @@ def GetDirectoryFileList(path='.', extfilter=None, numitems = None, mostrecent=T
     p = Popen(command, shell=True, stdout=PIPE, close_fds=True)
     dirlist = []
     for path in p.stdout.readlines():
-        print(path)
+        #print(path)
         path = path.decode()
         path = os.path.basename(path)
         x = path.strip()
-        print(x)
+        #print(x)
         #x = x.decode()
         dirlist.append(x)
     #dirlist = [path.strip() for path in p.stdout.readlines()]
