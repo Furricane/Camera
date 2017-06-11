@@ -4,7 +4,7 @@ import os, sys
 os.chdir('/home/pi/Camera/') # Change working directory
 from subprocess import Popen, PIPE
 import time
-import threading
+#import threading
 sys.path.append('/home/pi/PythonUtilities')
 sys.path.append('/home/pi/Camera/Logfiles')
 import LogHelper
@@ -17,6 +17,7 @@ import schedule
 import watchdog
 import GoogleDrive
 import socketcomm
+import ThreadHelper
 
 
 DebugMode = False
@@ -38,10 +39,10 @@ LogHelper.Init('Camera1', logfilepath='./Logfiles')
 # Spawn a watchdog process to notify if the main process fails
 if WatchDogRemote:
     watchdog.CreateHost('192.168.1.92',54321, 'Camera1')
-    globals.RunThreaded(watchdog.AcceptConnections)
-    globals.RunThreaded(watchdog.SendWatchdogHeartbeat)
+    ThreadHelper.RunThreaded(watchdog.AcceptConnections)
+    ThreadHelper.RunThreaded(watchdog.SendWatchdogHeartbeat)
     if MutualWatchDog:
-        globals.RunThreaded(watchdog.WatchDog, ('192.168.1.91', 12345, 'HomeControl'))
+        ThreadHelper.RunThreaded(watchdog.WatchDog, ('192.168.1.91', 12345, 'HomeControl'))
 
 def CreateMotionHost(HostAddress, HostPort):
     global MotionHost
@@ -147,10 +148,10 @@ def TwiceDailyRecurringScheduleEvents():
 if SchedulerPresent:
     # Starting run
     print("Starting Scheduled Events")
-    schedule.every().day.at("11:58").do(globals.RunThreaded, OnceDailyRecurringScheduleEvents)
+    schedule.every().day.at("11:58").do(ThreadHelper.RunThreaded, OnceDailyRecurringScheduleEvents)
     logging.info('Scheduling Event: OnceDailyRecurringScheduleEvents at 11:58')
-    schedule.every().day.at("11:59").do(globals.RunThreaded, TwiceDailyRecurringScheduleEvents)
-    schedule.every().day.at("23:59").do(globals.RunThreaded, TwiceDailyRecurringScheduleEvents)
+    schedule.every().day.at("11:59").do(ThreadHelper.RunThreaded, TwiceDailyRecurringScheduleEvents)
+    schedule.every().day.at("23:59").do(ThreadHelper.RunThreaded, TwiceDailyRecurringScheduleEvents)
     logging.info('Scheduling Events: TwiceDailyRecurringScheduleEvents at 11:59 and 23:59')
     # Plan to run at noon every day
     OnceDailyRecurringScheduleEvents()
@@ -164,7 +165,7 @@ while True:
     if not MotionHostCreated:
         MotionHostCreated = True
         print("creating new motion host")
-        globals.RunThreaded(CreateMotionHost,['192.168.1.92', MotionPort])
+        ThreadHelper.RunThreaded(CreateMotionHost,['192.168.1.92', MotionPort])
 
     message = ''
 
@@ -178,12 +179,17 @@ while True:
                 MotionHost.close_socket()
                 if message == 'MotionDetected':
                     OnMotionDetectedEvent()
+                    #globals.trigger['AllMotionDetected'].status = True
                 else:
                     zone = message[-1]
                     print("zone=", zone)
+                    #globals.trigger['ZoneMotionDetected'].status = True
                     OnMotionDetectedEvent(zone)
     if globals.VerboseLogging:
         now = datetime.now()
+
+# Functions to execute whenever JustArrivedHome is set to True
+    #globals.trigger['AllMotionDetected'].Test(textnotify=False, execiftriggered=OnMotionDetectedEvent)
 
     if TestRunOnce:
         TestRunOnce = False
