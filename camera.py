@@ -39,10 +39,10 @@ LogHelper.Init('Camera1', logfilepath='./Logfiles')
 # Spawn a watchdog process to notify if the main process fails
 if WatchDogRemote:
     watchdog.CreateHost('192.168.1.92',54321, 'Camera1')
-    ThreadHelper.RunThreaded(watchdog.AcceptConnections)
-    ThreadHelper.RunThreaded(watchdog.SendWatchdogHeartbeat)
+    ThreadHelper.RunThreaded(watchdog.AcceptConnections,threadname="WatchdogAcceptConnections")
+    ThreadHelper.RunThreaded(watchdog.SendWatchdogHeartbeat,threadname="WatchdogHeartbeat")
     if MutualWatchDog:
-        ThreadHelper.RunThreaded(watchdog.WatchDog, ('192.168.1.91', 12345, 'HomeControl'))
+        ThreadHelper.RunThreaded(watchdog.WatchDog, ('192.168.1.91', 12345, 'HomeControl'),threadname="MutualWatchdog")
 
 def CreateMotionHost(HostAddress, HostPort):
     global MotionHost
@@ -165,7 +165,7 @@ while True:
     if not MotionHostCreated:
         MotionHostCreated = True
         print("creating new motion host")
-        ThreadHelper.RunThreaded(CreateMotionHost,['192.168.1.92', MotionPort])
+        ThreadHelper.RunThreaded(CreateMotionHost,['192.168.1.92', MotionPort],threadname="MotionHost")
 
     message = ''
 
@@ -179,12 +179,15 @@ while True:
                 MotionHost.close_socket()
                 if message == 'MotionDetected':
                     OnMotionDetectedEvent()
+                    #ThreadHelper.RunThreaded(OnMotionDetectedEvent,threadname="AllMotionDetectedEvent")
                     #globals.trigger['AllMotionDetected'].status = True
                 else:
                     zone = message[-1]
                     print("zone=", zone)
-                    #globals.trigger['ZoneMotionDetected'].status = True
                     OnMotionDetectedEvent(zone)
+                    #globals.trigger['ZoneMotionDetected'].status = True
+                    #ThreadHelper.RunThreaded(OnMotionDetectedEvent, (zone,),threadname="ZoneMotionDetectedEvent")
+                ThreadHelper.PrintThreadNumber()
     if globals.VerboseLogging:
         now = datetime.now()
 
