@@ -21,7 +21,7 @@ import ThreadHelper
 
 
 DebugMode = False
-SchedulerPresent = False
+SchedulerPresent = True
 WatchDogRemote = True
 MutualWatchDog = True
 MotionHost = True
@@ -34,7 +34,7 @@ MotionPort = 44444
 MotionHostCreated = False
 MotionHostConnectedStatus = False
 #Start Log
-LogHelper.Init('Camera1', logfilepath='./Logfiles')
+Log = LogHelper.Init('Camera1', logfilepath='./Logfiles')
 
 # Spawn a watchdog process to notify if the main process fails
 if WatchDogRemote:
@@ -132,6 +132,11 @@ def OnMotionDetectedEvent(zone=None):
             GoogleDrive.UploadFile('/home/pi/Camera/Capture/',capturefile, folder)
 
 
+def DeleteOldestFiles(path='.',numdaystokeep=5):
+    print("Deleting Old Items")
+    command ='find '+path+' -mtime +'+str(numdaystokeep)+' -type f -delete'
+    p = Popen(command, shell=True, stdout=PIPE, close_fds=True)
+
 def ScheduleEvents():
     """ Put constant scheduled events here (i.e. things that should happen every day).
     # Variable events go in the recurringScheduleEvent function """
@@ -140,10 +145,11 @@ def OnceDailyRecurringScheduleEvents():
     print("Executing OnceDailyRecurringScheduleEvents ")
 
     now = datetime.now()
+    DeleteOldestFiles('/home/pi/Camera/Capture/')
 
 def TwiceDailyRecurringScheduleEvents():
     """ Send Log out to Email """
-    gmail.SendMail(logger.console.ReturnLog())
+    gmail.SendMail(Log.ReturnLog())
 
 if SchedulerPresent:
     # Starting run
