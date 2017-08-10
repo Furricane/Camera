@@ -7,7 +7,7 @@ import time
 #import threading
 sys.path.append('/home/pi/PythonUtilities')
 sys.path.append('/home/pi/Camera/Logfiles')
-import LogHelper
+import LogHelper as log
 from LogHelper import logging
 import globals
 from datetime import datetime
@@ -34,7 +34,9 @@ MotionPort = 44444
 MotionHostCreated = False
 MotionHostConnectedStatus = False
 #Start Log
-Log = LogHelper.Init('Camera1', logfilepath='./Logfiles')
+loghandle = log.Init('Camera1', logfilepath='./Logfiles')
+log.DisableModuleLogging()
+
 
 # Spawn a watchdog process to notify if the main process fails
 if WatchDogRemote:
@@ -48,11 +50,11 @@ def CreateMotionHost(HostAddress, HostPort):
     global MotionHost
     global MotionHostConnectedStatus
     MotionHost, connectedstatus = socketcomm.CreateHost(HostAddress, HostPort)
-    print("creating motion host with port",HostPort)
+    log.cyan("creating motion host with port: "+str(HostPort))
     while True:
         try:
             MotionHost.AcceptConnection()
-            print("Motion Connection accepted!")
+            log.cyan("Motion Connection accepted!")
             MotionHostConnectedStatus = True
             break
         except BlockingIOError:
@@ -113,27 +115,27 @@ def OnMotionDetectedEvent(zone=None):
          zonemsg = str(zone)
          gmail.SendText("Motion Detected Zone "+zonemsg)
 
-    print("executing on motion events - " + zonemsg)
+    log.blue("executing on motion events - " + zonemsg)
     #dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
     dirlist = GetDirectoryFileList('/home/pi/Camera/Capture/',numitems=10)
     #jpgdirlist = listdir_shell('/home/pi/Camera/Capture/', '*.jpg -t')[:1]
     jpgdirlist= GetDirectoryFileList('/home/pi/Camera/Capture/',extfilter='*.jpg',numitems=1)
-    print("Starting notify loop")
+    log.blue("Starting notify loop")
     #gmail.SendMail("Camera Motion Detected","Camera Motion Detected "+zonemsg)
-    print(jpgdirlist)
+    log.white(jpgdirlist)
     gmail.SendMail2("Camera Motion Detected Upload","Camera Motion Detected Upload"+zonemsg,jpgdirlist, path='/home/pi/Camera/Capture/')
     folder = GoogleDrive.CreateFolder('CameraTest')
     filelist, ids = GoogleDrive.GetFileList('CameraTest')
 
     for capturefile in dirlist:
         if capturefile in filelist:
-            print("Duplicate file, not uploading: ", capturefile)
+            log.blue("Duplicate file, not uploading: "+ capturefile)
         else:
             GoogleDrive.UploadFile('/home/pi/Camera/Capture/',capturefile, folder)
 
 
 def DeleteOldestFiles(path='.',numdaystokeep=5):
-    print("Deleting Old Items")
+    log.white("Deleting Old Items")
     command ='find '+path+' -mtime +'+str(numdaystokeep)+' -type f -delete'
     p = Popen(command, shell=True, stdout=PIPE, close_fds=True)
 
@@ -142,7 +144,7 @@ def ScheduleEvents():
     # Variable events go in the recurringScheduleEvent function """
 
 def OnceDailyRecurringScheduleEvents():
-    print("Executing OnceDailyRecurringScheduleEvents ")
+    log.yellow("Executing OnceDailyRecurringScheduleEvents ")
 
     now = datetime.now()
     DeleteOldestFiles('/home/pi/Camera/Capture/')
@@ -153,24 +155,24 @@ def TwiceDailyRecurringScheduleEvents():
 
 if SchedulerPresent:
     # Starting run
-    print("Starting Scheduled Events")
+    log.yellow("Starting Scheduled Events")
     schedule.every().day.at("11:58").do(ThreadHelper.RunThreaded, OnceDailyRecurringScheduleEvents)
-    logging.info('Scheduling Event: OnceDailyRecurringScheduleEvents at 11:58')
+    log.yellow('Scheduling Event: OnceDailyRecurringScheduleEvents at 11:58')
     schedule.every().day.at("11:59").do(ThreadHelper.RunThreaded, TwiceDailyRecurringScheduleEvents)
     schedule.every().day.at("23:59").do(ThreadHelper.RunThreaded, TwiceDailyRecurringScheduleEvents)
-    logging.info('Scheduling Events: TwiceDailyRecurringScheduleEvents at 11:59 and 23:59')
+    log.yellow('Scheduling Events: TwiceDailyRecurringScheduleEvents at 11:59 and 23:59')
     # Plan to run at noon every day
     OnceDailyRecurringScheduleEvents()
 
     ScheduleEvents()
 
 TestRunOnce = True
-print("Starting main loop")
+log.white("Starting main loop",True)
 while True:
     
     if not MotionHostCreated:
         MotionHostCreated = True
-        print("creating new motion host")
+        log.cyan("creating new motion host")
         ThreadHelper.RunThreaded(CreateMotionHost,['192.168.1.92', MotionPort],threadname="MotionHost")
 
     message = ''
@@ -178,7 +180,7 @@ while True:
     if MotionHostConnectedStatus:
         message = HostListen()
         if message != '':
-            print("Message Recieved = ",message)
+            log.blue("Message Recieved = "+message)
             if 'MotionDetected' in message:
                 MotionHostCreated = False
                 MotionHostConnectedStatus = False
@@ -189,7 +191,7 @@ while True:
                     #globals.trigger['AllMotionDetected'].status = True
                 else:
                     zone = message[-1]
-                    print("zone=", zone)
+                    log.blue("zone="+ zone)
                     OnMotionDetectedEvent(zone)
                     #globals.trigger['ZoneMotionDetected'].status = True
                     #ThreadHelper.RunThreaded(OnMotionDetectedEvent, (zone,),threadname="ZoneMotionDetectedEvent")
