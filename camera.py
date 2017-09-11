@@ -151,7 +151,7 @@ def OnceDailyRecurringScheduleEvents():
 
 def TwiceDailyRecurringScheduleEvents():
     """ Send Log out to Email """
-    gmail.SendMail(Log.ReturnLog())
+    gmail.SendHTMLMail(log.ReturnHTMLLog())
 
 if SchedulerPresent:
     # Starting run
