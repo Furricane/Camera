@@ -30,7 +30,7 @@ globals.VerboseTexting = False
 globals.VerboseLogging = True
 globals.VerboseModuleLogging = False
 
-MotionPort = 44444 
+MotionPort = 44444
 MotionHostCreated = False
 MotionHostConnectedStatus = False
 #Start Log
@@ -44,7 +44,7 @@ if WatchDogRemote:
     ThreadHelper.RunThreaded(watchdog.AcceptConnections,threadname="WatchdogAcceptConnections")
     ThreadHelper.RunThreaded(watchdog.SendWatchdogHeartbeat,threadname="WatchdogHeartbeat")
     if MutualWatchDog:
-        ThreadHelper.RunThreaded(watchdog.WatchDog, ('192.168.1.91', 12345, 'HomeControl'),threadname="MutualWatchdog")
+        ThreadHelper.RunThreaded(watchdog.WatchDog, '192.168.1.91', 12345, 'HomeControl',threadname="MutualWatchdog")
 
 def CreateMotionHost(HostAddress, HostPort):
     global MotionHost
@@ -74,7 +74,7 @@ def HostListen():
 
 def listFiles(path, extension):
     return [f for f in os.listdir(path) if f.endswith(extension)]
-    
+
 def listdir_shell(path, *lsargs):
     p = Popen(('ls', path) + lsargs, shell=False, stdout=PIPE, close_fds=True)
     #for path in p.stdout.readlines():
@@ -103,7 +103,7 @@ def GetDirectoryFileList(path='.', extfilter=None, numitems = None, mostrecent=T
     #dirlist = [path.strip() for path in p.stdout.readlines()]
     #dirlist = [item.decode() for item in dirlist]
     if numitems != None:
-        dirlist = dirlist[:numitems]       
+        dirlist = dirlist[:numitems]
     #print(dirlist)
     return dirlist
 
@@ -143,37 +143,34 @@ def ScheduleEvents():
     """ Put constant scheduled events here (i.e. things that should happen every day).
     # Variable events go in the recurringScheduleEvent function """
 
-def OnceDailyRecurringScheduleEvents():
-    log.yellow("Executing OnceDailyRecurringScheduleEvents ")
+def OnceDailyRecurringEvents():
+    log.yellow("Executing OnceDailyRecurringEvents ")
 
     now = datetime.now()
     DeleteOldestFiles('/home/pi/Camera/Capture/')
 
-def TwiceDailyRecurringScheduleEvents():
+def TwiceDailyRecurringEvents():
     """ Send Log out to Email """
     gmail.SendHTMLMail(log.ReturnHTMLLog())
 
 if SchedulerPresent:
     # Starting run
-    log.yellow("Starting Scheduled Events")
-    schedule.every().day.at("11:58").do(ThreadHelper.RunThreaded, OnceDailyRecurringScheduleEvents)
-    log.yellow('Scheduling Event: OnceDailyRecurringScheduleEvents at 11:58')
-    schedule.every().day.at("11:59").do(ThreadHelper.RunThreaded, TwiceDailyRecurringScheduleEvents)
-    schedule.every().day.at("23:59").do(ThreadHelper.RunThreaded, TwiceDailyRecurringScheduleEvents)
-    log.yellow('Scheduling Events: TwiceDailyRecurringScheduleEvents at 11:59 and 23:59')
+    ThreadHelper.ScheduleThreadedRecurringAtTime("11:58",OnceDailyRecurringEvents, color="yellow")
+    ThreadHelper.ScheduleThreadedRecurringAtTime("11:59",TwiceDailyRecurringEvents, color="yellow")
+    ThreadHelper.ScheduleThreadedRecurringAtTime("23:59",TwiceDailyRecurringEvents, color="yellow")
     # Plan to run at noon every day
-    OnceDailyRecurringScheduleEvents()
+    OnceDailyRecurringEvents()
 
     ScheduleEvents()
 
 TestRunOnce = True
 log.white("Starting main loop",True)
 while True:
-    
+
     if not MotionHostCreated:
         MotionHostCreated = True
         log.cyan("creating new motion host")
-        ThreadHelper.RunThreaded(CreateMotionHost,['192.168.1.92', MotionPort],threadname="MotionHost")
+        ThreadHelper.RunThreaded(CreateMotionHost,'192.168.1.92', MotionPort,threadname="MotionHost")
 
     message = ''
 
