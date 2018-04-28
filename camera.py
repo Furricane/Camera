@@ -1,7 +1,6 @@
 #!/usr/bin/python
 #!/usr/bin/env python
 import os, sys
-os.chdir('/home/pi/Camera/') # Change working directory
 from subprocess import Popen, PIPE
 import time
 #import threading
@@ -19,6 +18,8 @@ import GoogleDrive
 import socketcomm
 import ThreadHelper
 
+print("Python Version: %s.%s.%s" % sys.version_info[:3])
+os.chdir('/home/pi/Camera/') # Change working directory
 
 DebugMode = False
 SchedulerPresent = True
@@ -71,7 +72,7 @@ def host_listen():
     if data != b"":
         message = data.decode()
         message = message.strip()
-        #print("Message Received:", message)
+        # print("Message Received:", message)
         return message
     else:
         return ''
