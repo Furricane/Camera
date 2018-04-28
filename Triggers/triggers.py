@@ -34,7 +34,7 @@ class Trigger(object):
         self.timelasttriggered = datetime.strptime('1Jan2000', '%d%b%Y')
     def Reset(self, delay=120):
         """ Resets a global trigger object status variable to False, after a delay """
-        print('Resetting '+self.name+' status and triggered state to false')
+        #print('Resetting '+self.name+' status and triggered state to false')
         time.sleep(delay)
         self.status = False
         self.triggered = False
@@ -65,7 +65,7 @@ class Trigger(object):
         if self.status and not self.triggered:
             self.triggered = True
             self.timelasttriggered = datetime.now()
-            logging.info('globals.trigger['+self.name+'] = True')
+            #logging.info('globals.trigger['+self.name+'] = True')
             if execiftriggered != None:
                 ThreadHelper.RunThreaded(execiftriggered)
             if textnotify:

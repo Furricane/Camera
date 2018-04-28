@@ -1,22 +1,21 @@
 #!/usr/bin/python
 #!/usr/bin/env python
 import os, sys
+import socketcomm
 os.chdir('/home/pi/Camera/') # Change working directory
 sys.path.append('/home/pi/PythonUtilities')
-import socketcomm
 
-#print(os.getcwd())
 
 HostAddress = '192.168.1.92'
 HostPort = 44444
 
-def NotifyHost(HostAddress, HostPort, Message):
+def notify_host(host_address, host_port, message):
     connectedstatus = False
-    client, connectedstatus = socketcomm.CreateClient(HostAddress, HostPort)
+    client, connectedstatus = socketcomm.create_client(host_address, host_port)
     print('connectedstatus = %s' % (str(connectedstatus)))
     if connectedstatus:
         print('connection established')
-        client.write(Message)
+        client.write(message)
     else:
         print("unconnected")
 
@@ -27,7 +26,7 @@ if len(sys.argv) == 1:
 else:
     Message = 'MotionDetectedZone'+str(sys.argv[1])
 
-NotifyHost(HostAddress, HostPort, Message)
+notify_host(HostAddress, HostPort, Message)
 
 
 
