@@ -1,9 +1,10 @@
 #!/usr/bin/python
 #!/usr/bin/env python
 import os, sys
+sys.path.append('/home/pi/PythonUtilities')
 import socketcomm
 os.chdir('/home/pi/Camera/') # Change working directory
-sys.path.append('/home/pi/PythonUtilities')
+
 
 
 HostAddress = '192.168.1.92'

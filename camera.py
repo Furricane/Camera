@@ -19,7 +19,7 @@ import socketcomm
 import ThreadHelper
 
 print("Python Version: %s.%s.%s" % sys.version_info[:3])
-os.chdir('/home/pi/Camera/') # Change working directory
+os.chdir('/home/pi/Camera/')  # Change working directory
 
 DebugMode = False
 SchedulerPresent = True
@@ -91,7 +91,7 @@ def listdir_shell(path, *lsargs):
 
 
 def get_directory_file_list(path='.', extfilter=None, numitems = None, mostrecent=True):
-    command ='ls '+path
+    command ='ls ' + path
     if extfilter is None:
         command += '*.*'
     else:
@@ -110,7 +110,7 @@ def get_directory_file_list(path='.', extfilter=None, numitems = None, mostrecen
         dirlist.append(x)
     #dirlist = [path.strip() for path in p.stdout.readlines()]
     #dirlist = [item.decode() for item in dirlist]
-    if numitems != None:
+    if numitems is not None:
         dirlist = dirlist[:numitems]
     #print(dirlist)
     return dirlist
@@ -121,7 +121,7 @@ def on_motion_detected_event(zone=None):
         zonemsg = 'All'
     else:
          zonemsg = str(zone)
-         gmail.SendText("Motion Detected Zone "+zonemsg)
+         gmail.send_text("Motion Detected Zone "+zonemsg)
 
     log.blue("executing on motion events - " + zonemsg)
     #dirlist = listdir_shell('/home/pi/Camera/Capture/', '-t')[:10]
@@ -131,15 +131,15 @@ def on_motion_detected_event(zone=None):
     log.blue("Starting notify loop")
     #gmail.SendMail("Camera Motion Detected","Camera Motion Detected "+zonemsg)
     print(jpgdirlist)
-    gmail.send_mail("Camera Motion Detected Upload", "Camera Motion Detected Upload"+zonemsg,jpgdirlist, path='/home/pi/Camera/Capture/')
+    gmail.send_html_mail_with_attachment("Camera Motion Detected Upload", "Camera Motion Detected Upload"+zonemsg, jpgdirlist, path='/home/pi/Camera/Capture/')
     folder = GoogleDrive.create_folder('CameraTest')
     filelist, ids = GoogleDrive.get_file_list('CameraTest')
 
     for capturefile in dirlist:
         if capturefile in filelist:
-            log.blue("Duplicate file, not uploading: "+ capturefile)
+            log.blue("Duplicate file, not uploading: " + capturefile)
         else:
-            GoogleDrive.upload_file('/home/pi/Camera/Capture/',capturefile, folder)
+            GoogleDrive.upload_file('/home/pi/Camera/Capture/', capturefile, folder)
 
 
 def delete_oldest_files(path='.', numdaystokeep=5):
@@ -155,8 +155,6 @@ def schedule_events():
 
 def once_daily_recurring_events():
     log.yellow("Executing OnceDailyRecurringEvents ")
-
-    now = datetime.now()
     delete_oldest_files('/home/pi/Camera/Capture/')
 
 
@@ -176,7 +174,7 @@ if SchedulerPresent:
     schedule_events()
 
 TestRunOnce = True
-log.white("Starting main loop",True)
+log.white("Starting main loop", True)
 while True:
 
     if not MotionHostCreated:
@@ -200,7 +198,7 @@ while True:
                     #globals.trigger['AllMotionDetected'].status = True
                 else:
                     zone = message[-1]
-                    log.blue("zone="+ zone)
+                    log.blue("zone=" + zone)
                     on_motion_detected_event(zone)
                     #globals.trigger['ZoneMotionDetected'].status = True
                     #ThreadHelper.RunThreaded(OnMotionDetectedEvent, (zone,),threadname="ZoneMotionDetectedEvent")
